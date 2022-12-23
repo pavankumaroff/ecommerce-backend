@@ -11,7 +11,9 @@ router.get("/", [auth, admin], async (req, res) => {
 });
 
 router.get("/mine", [auth], async (req, res) => {
-  const order = await Order.find({ user: req.user._id }).sort({ date: -1 });
+  const order = await Order.find({ "user._id": req.user._id }).sort({
+    date: -1,
+  });
 
   res.send(order);
 });

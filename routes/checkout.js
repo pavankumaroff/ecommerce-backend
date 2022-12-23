@@ -2,19 +2,20 @@ const express = require("express");
 const router = express.Router();
 const auth = require("../middleware/auth");
 const { Cart } = require("../models/cart");
+const { User } = require("../models/user");
 const { Order } = require("../models/order");
 const { Product } = require("../models/product");
 const stripe = require("stripe")(process.env.stripeSecretKey);
 
 router.post("/create-checkout-session", [auth], async (req, res) => {
-  const user = req.user._id;
+  const userId = req.user._id;
   const customer = await stripe.customers.create({
     metadata: {
-      user,
+      userId,
     },
   });
 
-  const cart = await Cart.findOne({ user });
+  const cart = await Cart.findOne({ userId });
   const items = cart.products.map((p) => ({
     price_data: {
       currency: "inr",
@@ -42,11 +43,12 @@ router.post("/create-checkout-session", [auth], async (req, res) => {
 });
 
 async function createOrder(customer, object) {
-  const user = customer.metadata.user;
-  const cart = await Cart.findOne({ user });
+  const userId = customer.metadata.userId;
+  const user = await User.findById(userId);
+  const cart = await Cart.findOne({ userId });
 
   await Order.create({
-    user,
+    user: { _id: userId, email: user.email, name: user.name },
     shipping: {
       address: object.customer_details.address,
       email: object.customer_details.email,
